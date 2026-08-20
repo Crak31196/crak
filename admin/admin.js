@@ -146,22 +146,26 @@ function renderStatus(s) {
 }
 
 function updateButtonStates(state, riddle) {
-    const isWaiting  = state === "waiting";
-    const isPlaying  = state === "playing";
-    const isResults  = state === "results";
-    const isFinal    = state === "final";
-    const isEnded    = state === "ended";
+    const isEnded = state === "ended";
+    const isFinal = state === "final";
 
-    setBtn("btn-start-game",    isWaiting);
-    setBtn("btn-riddle-1",      isWaiting || isResults || isEnded);
-    setBtn("btn-riddle-2",      isResults && riddle >= 1);
-    setBtn("btn-riddle-3",      isResults && riddle >= 2);
-    setBtn("btn-riddle-4",      isResults && riddle >= 3);
-    setBtn("btn-show-results",  isPlaying);
-    setBtn("btn-final-reveal",  isResults && riddle === 4 || isPlaying && riddle === 4);
-    setBtn("btn-end-game",      !isWaiting && !isEnded);
-    setBtn("btn-reset-riddle",  isPlaying || isResults);
-    setBtn("btn-reset-game",    true);
+    // Derive a human-readable label for what "next" will do
+    let nextLabel = "▶ START GAME";
+    if (state === "playing" || state === "results") {
+        if (riddle < 4) {
+            nextLabel = `▶ NEXT  (Riddle ${riddle + 1})`;
+        } else {
+            nextLabel = "🎬 FINAL REVEAL!";
+        }
+    } else if (isFinal) {
+        nextLabel = "⏹ END GAME";
+    }
+
+    const nextBtn = $("btn-next");
+    if (nextBtn) { nextBtn.textContent = nextLabel; nextBtn.disabled = isEnded; }
+
+    setBtn("btn-end-game",  !!state && !isEnded && !isFinal);
+    setBtn("btn-reset-game", true);
 }
 
 function setBtn(id, enabled) {
@@ -211,56 +215,41 @@ async function _doAction(action, extra) {
     const statusRef = adminDb.ref("game/status");
 
     switch (action) {
-        case "startGame":
-            await statusRef.update({ state: "waiting", currentRiddle: 0, startedAt: SERVER_TIMESTAMP });
-            break;
+        case "next": {
+            const state  = gameStatus?.state;
+            const riddle = gameStatus?.currentRiddle || 0;
 
-        case "startRiddle": {
-            const n = extra.n;
-            await statusRef.update({ state: "playing", currentRiddle: n });
-            // Set riddle start timestamp (authoritative)
-            await adminDb.ref(`game/riddleTimestamps/${n}`).set({ startedAt: SERVER_TIMESTAMP });
+            if (!state || state === "waiting" || state === "ended") {
+                // Start riddle 1
+                await statusRef.update({ state: "playing", currentRiddle: 1 });
+                await adminDb.ref("game/riddleTimestamps/1").set({ startedAt: SERVER_TIMESTAMP });
+            } else if (state === "playing" || state === "results") {
+                if (riddle < 4) {
+                    const n = riddle + 1;
+                    await statusRef.update({ state: "playing", currentRiddle: n });
+                    await adminDb.ref(`game/riddleTimestamps/${n}`).set({ startedAt: SERVER_TIMESTAMP });
+                } else {
+                    await statusRef.update({ state: "final" });
+                }
+            } else if (state === "final") {
+                await statusRef.update({ state: "ended" });
+            }
             break;
         }
-
-        case "showResults": {
-            const n = gameStatus?.currentRiddle;
-            if (!n) throw new Error("No active riddle");
-            await statusRef.update({ state: "results", currentRiddle: n });
-            break;
-        }
-
-        case "finalReveal":
-            await statusRef.update({ state: "final" });
-            break;
 
         case "endGame":
             await statusRef.update({ state: "ended" });
             break;
 
-        case "resetRiddle": {
-            const n = gameStatus?.currentRiddle;
-            if (!n) throw new Error("No active riddle");
-            // Remove winner and answers for current riddle
-            await Promise.all([
-                adminDb.ref(`winners/riddle${n}`).remove(),
-                adminDb.ref(`answers/riddle${n}`).remove(),
-                adminDb.ref(`balloons/riddle${n}`).remove(),
-                adminDb.ref(`game/riddleTimestamps/${n}`).remove()
-            ]);
-            await statusRef.update({ state: "playing", currentRiddle: n });
-            await adminDb.ref(`game/riddleTimestamps/${n}`).set({ startedAt: SERVER_TIMESTAMP });
-            break;
-        }
-
         case "resetGame":
-            if (!confirm("⚠️ This will wipe ALL game data. Are you sure?")) return;
+            if (!confirm("⚠️ This will wipe ALL data including players. Are you sure?")) return;
             await Promise.all([
                 adminDb.ref("game").remove(),
                 adminDb.ref("answers").remove(),
                 adminDb.ref("winners").remove(),
                 adminDb.ref("balloons").remove(),
-                adminDb.ref("finalWinner").remove()
+                adminDb.ref("finalWinner").remove(),
+                adminDb.ref("players").remove()
             ]);
             await statusRef.set({ state: "waiting", currentRiddle: 0 });
             break;
