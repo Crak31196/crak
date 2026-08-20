@@ -68,12 +68,13 @@ And absolutely ZERO experience with babies! 😂
     ];
 
     // ── State ─────────────────────────────────────────────────
-    let idx      = 0;       // current riddle index (0-3)
-    let placed   = [];      // null | letter string, one slot per answer character
-    let pool     = [];      // [{letter, id}] — tiles still available
-    let uid      = 0;       // unique tile id counter
-    let revealed = 0;       // how many letters revealed so far
-    let busy     = false;   // prevents input during animations
+    let idx      = 0;
+    let placed   = [];
+    let pool     = [];
+    let uid      = 0;
+    let busy     = false;
+    let hintTimer    = null;   // setTimeout handle for hint unlock
+    let hintInterval = null;   // setInterval handle for countdown display
 
     // ── Helpers ───────────────────────────────────────────────
     const $  = id => document.getElementById(id);
@@ -97,10 +98,9 @@ And absolutely ZERO experience with babies! 😂
 
     // ── Entry ─────────────────────────────────────────────────
     function start() {
-        idx      = 0;
-        revealed = 0;
-        busy     = false;
-        Animations.updateProgressLetters(0);
+        idx  = 0;
+        busy = false;
+        Animations.updateProgressLetters(0); // reset all boxes to ?
         loadRiddle(0);
         showScreen('game');
     }
@@ -126,7 +126,42 @@ And absolutely ZERO experience with babies! 😂
 
         renderWords();
         renderTiles();
-        AudioManager.play(i + 1);
+        startHintTimer();
+    }
+
+    // ── Hint: unlocks after 60 s ──────────────────────────────
+    function startHintTimer() {
+        clearTimeout(hintTimer);
+        clearInterval(hintInterval);
+        AudioManager.stop();
+
+        const btn    = $('hint-btn');
+        const cdEl   = $('hint-countdown');
+        if (btn) btn.disabled = true;
+
+        let secs = 60;
+        if (cdEl) cdEl.textContent = '(1:00)';
+
+        hintInterval = setInterval(() => {
+            secs--;
+            if (cdEl) {
+                const m = Math.floor(secs / 60);
+                const s = String(secs % 60).padStart(2, '0');
+                cdEl.textContent = '(' + m + ':' + s + ')';
+            }
+            if (secs <= 0) clearInterval(hintInterval);
+        }, 1000);
+
+        hintTimer = setTimeout(() => {
+            if (btn) btn.disabled = false;
+            if (cdEl) cdEl.textContent = '';
+        }, 60000);
+    }
+
+    function playHint() {
+        AudioManager.play(idx + 1);
+        const btn = $('hint-btn');
+        if (btn) btn.disabled = true; // play once per riddle
     }
 
     // ── Render ────────────────────────────────────────────────
@@ -214,27 +249,19 @@ And absolutely ZERO experience with babies! 😂
     }
 
     async function onCorrect() {
-        // Light up boxes
-        document.querySelectorAll('.letter-box').forEach(b => b.classList.add('correct'));
-
-        // Reveal progress letter
-        revealed++;
-        Animations.updateProgressLetters(revealed);
-        Animations.launchConfetti(3500);
+        clearTimeout(hintTimer);
+        clearInterval(hintInterval);
         AudioManager.stop();
+
+        document.querySelectorAll('.letter-box').forEach(b => b.classList.add('correct'));
+        Animations.launchConfetti(3500);
 
         await sleep(600);
 
-        // Show solved panel
         const r = RIDDLES[idx];
         $('solved-movie').textContent    = r.words.join(' ');
         $('solved-dialogue').textContent = '\u201c' + r.dialogue + '\u201d';
-        $('solved-letter').textContent   = r.letter;
 
-        // Also update the progress bar inside the solved section
-        Animations.updateProgressLetters(revealed);
-
-        // Label the next button
         const nextBtn = $('next-btn');
         if (nextBtn) {
             nextBtn.textContent = idx < 3 ? 'NEXT RIDDLE \u2192' : '\ud83c\udfac REVEAL THE NAME!';
@@ -283,30 +310,19 @@ And absolutely ZERO experience with babies! 😂
             },
             {
                 delay: 3200,
-                html: `<p class="cinematic-medium">Four films\u2026</p>
-                       <p class="cinematic-medium">Four clues\u2026</p>
+                html: `<p class="cinematic-medium">Four films\u2026 Four clues\u2026</p>
                        <p class="cinematic-medium">And one little twist! \ud83c\udf00</p>`
             },
             {
-                delay: 2600,
-                html: `<p class="cinematic-big">Look at the FILM NAMES. \ud83d\udc40</p>`
-            },
-            {
-                delay: 4800,
-                html: `
-                    <div class="movie-clue-row"><span class="movie-clue-name">ACTION REPLAYY</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">A</span></div>
-                    <div class="movie-clue-row"><span class="movie-clue-name">NAYAK</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">N</span></div>
-                    <div class="movie-clue-row"><span class="movie-clue-name">SINGHAM</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">S</span></div>
-                    <div class="movie-clue-row"><span class="movie-clue-name">HEYY BABYY</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">H</span></div>`
-            },
-            {
-                delay: 3500,
-                html: `<div class="letter-combiner">
-                    <span class="combine-letter">A</span><span class="combine-plus">+</span>
-                    <span class="combine-letter">N</span><span class="combine-plus">+</span>
-                    <span class="combine-letter">S</span><span class="combine-plus">+</span>
-                    <span class="combine-letter">H</span>
-                </div>`
+                // Letters fly in one by one — delay covers all 4 animations
+                delay: 4200,
+                html: `<p class="cinematic-big" style="margin-bottom:24px">Look at the first letter of each movie\u2026</p>
+                       <div class="ansh-build-row">
+                         <span class="ansh-build-letter" style="animation-delay:.2s">A</span>
+                         <span class="ansh-build-letter" style="animation-delay:.9s">N</span>
+                         <span class="ansh-build-letter" style="animation-delay:1.6s">S</span>
+                         <span class="ansh-build-letter" style="animation-delay:2.3s">H</span>
+                       </div>`
             },
             {
                 delay: 7000,
@@ -334,5 +350,5 @@ And absolutely ZERO experience with babies! 😂
         Animations.initCanvas();
     });
 
-    return { start, onTile, onBox, clearAll, nextRiddle };
+    return { start, onTile, onBox, clearAll, nextRiddle, playHint };
 })();

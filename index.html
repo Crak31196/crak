@@ -78,9 +78,12 @@
 
     <div id="letter-tiles" class="letter-tiles"></div>
 
-    <button class="btn btn-secondary clear-btn" onclick="Game.clearAll()">
-      ↩ CLEAR
-    </button>
+    <div class="puzzle-bottom-row">
+      <button class="btn btn-secondary clear-btn" onclick="Game.clearAll()">↩ CLEAR</button>
+      <button id="hint-btn" class="btn btn-secondary hint-btn" onclick="Game.playHint()" disabled>
+        🎵 Hint <span id="hint-countdown" class="hint-countdown"></span>
+      </button>
+    </div>
   </div>
 
   <!-- ── SOLVED (shown after correct answer) ── -->
@@ -88,17 +91,6 @@
     <div class="solved-check">✅</div>
     <p class="solved-movie-name" id="solved-movie"></p>
     <p class="solved-dialogue" id="solved-dialogue"></p>
-
-    <div class="solved-letter-reveal">
-      <span class="solved-letter-char" id="solved-letter"></span>
-    </div>
-
-    <div class="progress-bar" style="margin:4px 0 20px">
-      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    </div>
 
     <button class="btn btn-primary btn-huge" id="next-btn" onclick="Game.nextRiddle()">
       NEXT RIDDLE →
