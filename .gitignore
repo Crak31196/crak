@@ -18,6 +18,3 @@ node_modules/
 npm-debug.log*
 yarn-error.log
 
-# Keep the audio folder but ignore actual MP3 files
-# (copyrighted material should not be committed to public repos)
-assets/audio/*.mp3
