@@ -17,6 +17,7 @@
     },
     "answers": {
       ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
       "$riddle": {
         "$uid": {
           ".write": "auth != null && auth.uid === $uid",
@@ -26,25 +27,27 @@
     },
     "winners": {
       ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
       "$riddle": {
-        ".write": "auth != null && !data.exists()",
+        ".write": "auth != null && !data.exists() && !root.child('admins').child(auth.uid).exists()",
         ".validate": "newData.hasChildren(['uid','name','clickedAt']) && newData.child('uid').val() === auth.uid"
       }
     },
     "balloons": {
       ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).exists()",
       "final": {
-        ".write": "auth != null && !data.exists() && root.child('finalWinner').child('uid').val() === auth.uid",
+        ".write": "auth != null && !data.exists() && root.child('finalWinner').child('uid').val() === auth.uid && !root.child('admins').child(auth.uid).exists()",
         ".validate": "newData.child('state').val() === 'popped' && newData.child('winnerUid').val() === auth.uid"
       },
       "$riddle": {
-        ".write": "auth != null && !data.exists() && root.child('winners').child($riddle).child('uid').val() === auth.uid",
+        ".write": "auth != null && !data.exists() && root.child('winners').child($riddle).child('uid').val() === auth.uid && !root.child('admins').child(auth.uid).exists()",
         ".validate": "newData.child('state').val() === 'popped' && newData.child('winnerUid').val() === auth.uid"
       }
     },
     "finalWinner": {
       ".read": true,
-      ".write": "auth != null && !data.exists()"
+      ".write": "auth != null && (!data.exists() || root.child('admins').child(auth.uid).exists())"
     }
   }
 }
