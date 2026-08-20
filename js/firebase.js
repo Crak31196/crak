@@ -15,7 +15,7 @@
 
 const firebaseConfig = {
   apiKey: "AIzaSyA-jGM_CJ9ZXxZrl1rst9A1ciunjZMYLwE",
-  authDomain: "ansh-reveal.firebaseapp.com",i
+  authDomain: "ansh-reveal.firebaseapp.com",
   databaseURL: "https://ansh-reveal-default-rtdb.firebaseio.com",
   projectId: "ansh-reveal",
   storageBucket: "ansh-reveal.firebasestorage.app",
