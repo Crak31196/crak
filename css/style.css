@@ -198,10 +198,41 @@ body {
 }
 
 /* ─────────────────────────────────────────────
+   6b. LIGHT-SCREEN TEXT OVERRIDES
+   (Landing & Riddle use light blue bg — text must be dark)
+───────────────────────────────────────────── */
+#screen-landing .landing__tagline {
+  color: #0a1828;
+  text-shadow: 0 2px 10px rgba(13, 27, 42, 0.12);
+}
+
+#screen-landing .tagline__word--gold {
+  color: #7a5400;
+  text-shadow: 0 0 8px rgba(140, 100, 0, 0.2), 0 2px 10px rgba(13, 27, 42, 0.12);
+}
+
+#screen-landing .landing__subtitle {
+  color: #7a5400;
+}
+
+#screen-landing .landing__dedication {
+  color: #1e3a58;
+}
+
+#screen-landing .landing__ornament,
+#screen-landing .landing__footer {
+  color: #7090a8;
+}
+
+#screen-riddle .film-counter {
+  color: #5a80a0;
+}
+
+/* ─────────────────────────────────────────────
    7. LANDING SCREEN
 ───────────────────────────────────────────── */
 #screen-landing {
-  background: radial-gradient(ellipse at 50% 30%, #1e0f18 0%, #0f0810 50%, var(--c-bg) 100%);
+  background: radial-gradient(ellipse at 50% 30%, #c2dcf0 0%, #cce3f6 50%, #d8edf8 100%);
   text-align: center;
   padding: var(--sp-xl) var(--sp-lg);
 }
@@ -312,14 +343,14 @@ body {
   outline-offset: 3px;
 }
 
-/* CTA — big start button */
+/* CTA — big start button (hardcode text colour so it stays cream on dark bg button) */
 .btn--cta {
   background: linear-gradient(135deg, var(--c-burgundy), var(--c-red));
-  color: var(--c-cream);
+  color: #f0e6d2;
   font-size: clamp(0.8rem, 2.5vw, 1rem);
   padding: var(--sp-lg) var(--sp-2xl);
   border: 1px solid rgba(201, 168, 76, 0.3);
-  box-shadow: var(--glow-red), 0 4px 24px rgba(0,0,0,0.5);
+  box-shadow: var(--glow-red), 0 4px 24px rgba(0,0,0,0.3);
   border-radius: var(--r-lg);
   min-height: 60px;
   margin-top: var(--sp-md);
@@ -331,28 +362,29 @@ body {
   transform: translateY(-2px);
 }
 
-/* Reveal button */
+/* I KNOW button — dark navy on light blue bg, gold text */
 .btn--reveal {
-  background: linear-gradient(135deg, #2c1f35, #1a1520);
-  color: var(--c-gold-light);
+  background: linear-gradient(135deg, #0a1828, #162438);
+  color: #d4a820;
   font-size: clamp(0.8rem, 2.5vw, 0.95rem);
-  border: 1px solid var(--c-gold-dim);
-  box-shadow: var(--glow-gold-sm);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  box-shadow: 0 4px 18px rgba(10, 24, 40, 0.22);
   min-height: 56px;
   padding: var(--sp-md) var(--sp-xl);
   margin-top: var(--sp-lg);
 }
 
 .btn--reveal:hover {
+  background: linear-gradient(135deg, #162438, #1e3250);
   border-color: var(--c-gold);
-  box-shadow: var(--glow-gold);
+  box-shadow: 0 6px 24px rgba(10, 24, 40, 0.32);
   transform: translateY(-2px);
 }
 
 /* Next riddle button */
 .btn--next {
   background: linear-gradient(135deg, var(--c-burgundy), var(--c-red));
-  color: var(--c-cream);
+  color: #f0e6d2;
   font-size: clamp(0.8rem, 2.5vw, 0.95rem);
   border: 1px solid rgba(201, 168, 76, 0.2);
   box-shadow: var(--glow-red);
@@ -410,7 +442,7 @@ body {
    9. RIDDLE SCREEN — HEADER / PROGRESS
 ───────────────────────────────────────────── */
 #screen-riddle {
-  background: radial-gradient(ellipse at 50% 0%, #1a0f20 0%, var(--c-bg) 60%);
+  background: radial-gradient(ellipse at 50% 0%, #c2dcf0 0%, #d8edf8 60%);
   justify-content: flex-start;
   padding-top: 0;
 }
@@ -420,7 +452,7 @@ body {
   top: 0;
   z-index: 20;
   width: 100%;
-  background: linear-gradient(to bottom, rgba(8,6,8,0.97) 85%, transparent);
+  background: linear-gradient(to bottom, rgba(212,232,248,0.97) 85%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -451,12 +483,12 @@ body {
 .name-slot {
   width: clamp(44px, 11vw, 58px);
   height: clamp(44px, 11vw, 58px);
-  border: 1.5px solid var(--c-muted);
+  border: 1.5px solid #9ab8d0;
   border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(18, 12, 22, 0.8);
+  background: rgba(195, 220, 242, 0.7);
   transition: border-color var(--t-mid), box-shadow var(--t-mid);
 }
 
@@ -470,7 +502,7 @@ body {
   font-family: var(--font-display);
   font-size: clamp(1.1rem, 4.5vw, 1.5rem);
   font-weight: 700;
-  color: var(--c-muted);
+  color: #5a80a0;
   transition: color var(--t-mid), text-shadow var(--t-mid);
   display: block;
 }
@@ -505,11 +537,11 @@ body {
 }
 
 .riddle-card {
-  background: var(--c-card);
-  border: 1px solid var(--c-card-border);
+  background: rgba(242, 249, 253, 0.94);
+  border: 1px solid #b0cce0;
   border-radius: var(--r-xl);
   padding: var(--sp-xl) var(--sp-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 4px 24px rgba(13, 27, 42, 0.10);
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -522,7 +554,7 @@ body {
   font-family: var(--font-heading);
   font-size: 0.65rem;
   letter-spacing: 0.3em;
-  color: var(--c-gold-dim);
+  color: #5a80a0;
   text-transform: uppercase;
   margin-bottom: var(--sp-lg);
 }
@@ -530,7 +562,7 @@ body {
 .riddle-text {
   font-family: var(--font-body);
   font-size: clamp(1.05rem, 3.5vw, 1.2rem);
-  color: var(--c-cream);
+  color: #0a1828;
   line-height: 1.85;
   white-space: pre-line;
   text-align: center;
@@ -1043,6 +1075,65 @@ body {
 /* Screen transition helper class (JS-driven) */
 .beat-enter {
   animation: fade-in-up 0.6s ease both;
+}
+
+/* ─────────────────────────────────────────────
+   16b. NAME INPUT (landing screen)
+───────────────────────────────────────────── */
+.name-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+  width: 100%;
+  max-width: 300px;
+}
+
+.name-input-label {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #537a96;
+}
+
+.name-input {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid #9ab8d0;
+  border-radius: var(--r-md);
+  padding: var(--sp-md) var(--sp-lg);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: #0a1828;
+  text-align: center;
+  width: 100%;
+  min-height: 50px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.name-input::placeholder {
+  color: #7898b0;
+}
+
+.name-input:focus {
+  border-color: #8a6200;
+  box-shadow: 0 0 0 3px rgba(138, 98, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* ─────────────────────────────────────────────
+   16c. CELEBRATION GUEST NAME
+───────────────────────────────────────────── */
+.cel-guest {
+  font-family: var(--font-heading);
+  font-size: clamp(0.85rem, 3vw, 1.05rem);
+  color: var(--c-gold);
+  letter-spacing: 0.1em;
+  min-height: 1.5em;
+  text-align: center;
 }
 
 /* ─────────────────────────────────────────────

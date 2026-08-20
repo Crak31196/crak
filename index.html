@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Four Bollywood films. Four clues. One special name. ❤️" />
   <meta name="theme-color" content="#080608" />
-  <title>🎬 A Special Name Reveal | Ansh</title>
+  <title>🎬 A Special Name Reveal </title>
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="🎬 A Special Name Reveal | Ansh" />
+  <meta property="og:title" content="🎬 A Special Name Reveal" />
   <meta property="og:description" content="Four Bollywood films. Four clues. One special name. ❤️" />
   <meta property="og:image" content="assets/images/og-preview.png" />
 
   <!-- Twitter / X Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="🎬 A Special Name Reveal | Ansh" />
+  <meta name="twitter:title" content="🎬 A Special Name Reveal" />
   <meta name="twitter:description" content="Four Bollywood films. Four clues. One special name. ❤️" />
 
   <!-- Google Fonts: Cinzel (cinematic headings) + Crimson Text (elegant body) -->
@@ -58,6 +58,19 @@
       <p class="landing__dedication">
         For our little superstar&nbsp;<span role="img" aria-label="baby">👶🏻</span>
       </p>
+
+      <div class="name-input-group">
+        <label class="name-input-label" for="guest-name">Who's guessing? ✨</label>
+        <input
+          type="text"
+          id="guest-name"
+          class="name-input"
+          placeholder="Enter your name…"
+          maxlength="30"
+          autocomplete="given-name"
+          aria-label="Enter your name to personalise this experience"
+        />
+      </div>
 
       <button
         id="btn-start"
@@ -120,53 +133,12 @@
           <button
             id="btn-reveal"
             class="btn btn--reveal"
-            aria-label="Reveal the Bollywood movie answer"
+            aria-label="I know this movie, go to the next riddle"
           >
-            <span class="btn__text">REVEAL MOVIE</span>
-            <span class="btn__icon" aria-hidden="true">🎬</span>
+            <span class="btn__text">I KNOW THE MOVIE</span>
+            <span class="btn__icon" aria-hidden="true">✓</span>
           </button>
         </div>
-      </div>
-
-      <!-- ANSWER PHASE (hidden until Reveal is clicked) -->
-      <div id="phase-answer" class="riddle-phase riddle-phase--answer" hidden>
-
-        <div class="answer-letter-wrap" aria-hidden="true">
-          <div class="answer-letter" id="answer-letter"></div>
-          <div class="answer-letter-glow" aria-hidden="true"></div>
-        </div>
-
-        <h2 class="answer-title" id="answer-title"></h2>
-
-        <div class="dialogue-box">
-          <p class="dialogue-lbl">
-            <span aria-hidden="true">🎙️</span>&nbsp;FILMY DIALOGUE
-          </p>
-          <blockquote class="dialogue-quote" id="dialogue-quote"></blockquote>
-
-          <div class="audio-row">
-            <button
-              class="btn btn--audio"
-              id="btn-audio"
-              aria-label="Play the famous film dialogue audio clip"
-            >
-              <span class="audio-icon" id="audio-icon" aria-hidden="true">▶</span>
-              <span id="audio-lbl">PLAY DIALOGUE</span>
-            </button>
-            <p class="audio-soon" id="audio-soon" hidden>
-              <span aria-hidden="true">🎵</span>&nbsp;Audio coming soon
-            </p>
-          </div>
-        </div>
-
-        <button
-          id="btn-next"
-          class="btn btn--next"
-          aria-label="Go to next riddle"
-        >
-          <span id="next-lbl">NEXT RIDDLE</span>
-          <span class="btn__icon" id="next-icon" aria-hidden="true">→</span>
-        </button>
       </div>
 
     </main>
@@ -217,6 +189,7 @@
       </div>
 
       <p class="cel-heart" role="img" aria-label="Love heart">❤️</p>
+      <p id="cel-guest" class="cel-guest"></p>
       <p class="cel-from">From Mom &amp; Dad</p>
       <p class="cel-parents">Utkarsha &amp; Rakesh</p>
 
@@ -230,9 +203,6 @@
       </button>
     </div>
   </section>
-
-  <!-- Shared hidden audio element, controlled entirely by JS -->
-  <audio id="audio-el" preload="none" aria-hidden="true" tabindex="-1"></audio>
 
   <script src="js/script.js"></script>
 </body>
