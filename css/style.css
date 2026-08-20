@@ -8,7 +8,7 @@
 ───────────────────────────────────────────── */
 :root {
   /* Colours */
-  --c-bg:           #080608;
+  --c-bg:           #ffffff;
   --c-surface:      #110e10;
   --c-card:         #1c1720;
   --c-card-border:  #2e2433;
@@ -75,7 +75,7 @@ html {
 
 body {
   height: 100%;
-  background-color: var(--c-bg);
+  background-color: #ffffff;
   color: var(--c-cream);
   font-family: var(--font-body);
   font-size: 1.125rem;
@@ -190,11 +190,11 @@ body {
 }
 
 .screen--dark {
-  background-color: var(--c-bg);
+  background-color: #ffffff;
 }
 
 .screen--celebration {
-  background: radial-gradient(ellipse at center, #1a0a10 0%, var(--c-bg) 70%);
+  background: #ffffff;
 }
 
 /* ─────────────────────────────────────────────
@@ -232,7 +232,7 @@ body {
    7. LANDING SCREEN
 ───────────────────────────────────────────── */
 #screen-landing {
-  background: radial-gradient(ellipse at 50% 30%, #c2dcf0 0%, #cce3f6 50%, #d8edf8 100%);
+  background: #ffffff;
   text-align: center;
   padding: var(--sp-xl) var(--sp-lg);
 }
@@ -442,7 +442,7 @@ body {
    9. RIDDLE SCREEN — HEADER / PROGRESS
 ───────────────────────────────────────────── */
 #screen-riddle {
-  background: radial-gradient(ellipse at 50% 0%, #c2dcf0 0%, #d8edf8 60%);
+  background: #ffffff;
   justify-content: flex-start;
   padding-top: 0;
 }
@@ -452,7 +452,7 @@ body {
   top: 0;
   z-index: 20;
   width: 100%;
-  background: linear-gradient(to bottom, rgba(212,232,248,0.97) 85%, transparent);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.97) 85%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -671,7 +671,7 @@ body {
 ───────────────────────────────────────────── */
 #screen-climax {
   justify-content: center;
-  background: radial-gradient(ellipse at center, #15090f 0%, var(--c-bg) 80%);
+  background: #ffffff;
 }
 
 .climax-stage {
