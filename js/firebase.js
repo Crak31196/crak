@@ -12,18 +12,10 @@
 // region (e.g., https://YOUR_PROJECT-default-rtdb.firebaseio.com)
 // ============================================================
 
-const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    databaseURL:       "YOUR_DATABASE_URL",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
-};
+
 const firebaseConfig = {
   apiKey: "AIzaSyA-jGM_CJ9ZXxZrl1rst9A1ciunjZMYLwE",
-  authDomain: "ansh-reveal.firebaseapp.com",
+  authDomain: "ansh-reveal.firebaseapp.com",i
   databaseURL: "https://ansh-reveal-default-rtdb.firebaseio.com",
   projectId: "ansh-reveal",
   storageBucket: "ansh-reveal.firebasestorage.app",

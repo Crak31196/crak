@@ -40,7 +40,6 @@ The final reveal spells out **ANSH** — one letter per movie.
 3. Go to **Users** tab → **Add user**
 4. Enter admin email + password → **Add user**
 5. Copy the **UID** shown — you will need it in step 6
-o1lDUcKRBOOCi79QP7c1wIFlOsK2
 ### 4. Create Realtime Database
 
 1. Firebase Console → **Realtime Database** → **Create database**
