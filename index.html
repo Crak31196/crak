@@ -5,54 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0a0a0a">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="A real-time multiplayer Bollywood baby name reveal game for Ansh!">
   <title>🎬 Ansh's Name Reveal</title>
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-
-  <!-- Styles -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- Confetti canvas (full-screen particle layer) -->
 <canvas id="confetti-canvas"></canvas>
 
-<!-- Toast notifications -->
-<div id="toast-container"></div>
-
-<!-- Loading splash -->
-<div id="loading-overlay">
-  <div class="loading-icon">🎬</div>
-  <p class="loading-text">Loading…</p>
-</div>
-
-<!-- ── Confirmation modal (shown over riddle screen) ──────── -->
-<div id="confirmation-overlay" class="confirmation-overlay">
-  <div class="confirmation-dialog">
-    <div class="conf-emoji">🎬</div>
-    <h2 class="conf-title">Lock Your Answer?</h2>
-    <p class="conf-body">
-      You know the movie?<br>
-      <small>Your click time was already recorded&nbsp;— this just confirms it.</small>
-    </p>
-    <div class="conf-btns">
-      <button class="btn btn-primary" onclick="window.App.handleConfirmYes()">✅ YES — LOCK MY ANSWER</button>
-      <button class="btn btn-secondary" onclick="window.App.handleConfirmCancel()">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     SCREEN: JOIN
-     ════════════════════════════════════════════ -->
-<div id="screen-join" class="screen active">
-
-  <div class="join-hero">
+<!-- ═══════════════════════════════
+     SCREEN: INTRO
+     ═══════════════════════════════ -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-hero">
     <div class="film-strip">
       <div class="film-strip-hole"></div>
       <div class="film-strip-hole"></div>
@@ -67,75 +34,24 @@
 
   <div class="divider"></div>
 
-  <div class="card">
-    <div class="form-group">
-      <label class="form-label" for="player-name-input">Enter Your Name</label>
-      <input
-        type="text"
-        id="player-name-input"
-        class="form-input"
-        placeholder="Your name…"
-        maxlength="20"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-      >
-      <p id="name-error" class="form-error"></p>
-    </div>
-    <button class="btn btn-primary btn-huge" id="join-btn" onclick="window.App.handleJoin()">
-      JOIN THE GAME 🎬
+  <div style="text-align:center;width:100%;max-width:420px">
+    <p class="text-muted mb-16" style="font-size:.92rem;line-height:1.8">
+      4 Bollywood movie riddles.<br>
+      Arrange the letters to guess each movie.<br>
+      The final answer will surprise you! 🌟
+    </p>
+    <button class="btn btn-primary btn-huge" onclick="Game.start()">
+      PLAY 🎬
     </button>
   </div>
-
-  <p class="text-muted mt-16" style="font-size:.8rem;text-align:center">
-    Multiplayer · Real-time · Bollywood
-  </p>
 </div>
 
-<!-- ════════════════════════════════════════════
-     SCREEN: LOBBY
-     ════════════════════════════════════════════ -->
-<div id="screen-lobby" class="screen">
+<!-- ═══════════════════════════════
+     SCREEN: GAME
+     ═══════════════════════════════ -->
+<div id="screen-game" class="screen">
 
-  <div class="app-header">
-    <div class="film-strip">
-      <div class="film-strip-hole"></div>
-      <div class="film-strip-hole"></div>
-      <div class="film-strip-hole"></div>
-    </div>
-    <h1 class="app-title">Bollywood Name Reveal</h1>
-  </div>
-
-  <div class="lobby-welcome">
-    <p class="lobby-name">🎬 Welcome, <span id="lobby-player-name">Player</span>!</p>
-    <p class="lobby-status">Waiting for the game to begin…</p>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="players-section">
-    <p class="section-title" style="margin-bottom:12px">
-      <span class="pulse-dot"></span>PLAYERS JOINED (<span id="player-count">0</span>)
-    </p>
-    <ul id="players-list" class="players-list"></ul>
-  </div>
-
-  <div class="lobby-footer">
-    <span class="pulse-dot"></span>Waiting for the host to start the game…
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     SCREEN: RIDDLE (active riddle)
-     ════════════════════════════════════════════ -->
-<div id="screen-riddle" class="screen">
-
-  <div class="riddle-header">
-    <span class="riddle-counter" id="riddle-counter">RIDDLE 1 OF 4</span>
-    <span class="riddle-player-name" id="riddle-player-name"></span>
-  </div>
-
-  <!-- Progress bar (letters revealed so far) -->
+  <!-- Progress letters (revealed name so far) -->
   <div class="progress-bar">
     <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
     <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
@@ -143,183 +59,65 @@
     <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
   </div>
 
+  <!-- Riddle header -->
+  <div class="riddle-header">
+    <span class="riddle-counter" id="riddle-number">RIDDLE 1 OF 4</span>
+  </div>
+
+  <!-- Riddle text -->
   <div class="riddle-card">
     <p class="riddle-label">🎬 BOLLYWOOD MYSTERY</p>
     <p class="riddle-text" id="riddle-text"></p>
-    <div class="riddle-dialogue" id="riddle-dialogue"></div>
   </div>
 
-  <div class="riddle-action">
-    <button class="btn btn-primary btn-huge mt-16" id="know-it-btn" onclick="window.App.handleIKnowIt()">
-      🎬 I KNOW IT!
+  <!-- ── PUZZLE (shown while solving) ── -->
+  <div id="puzzle-section" class="puzzle-section">
+    <p class="puzzle-hint">Arrange the letters to spell the movie name</p>
+
+    <div id="puzzle-words" class="puzzle-words"></div>
+
+    <div id="letter-tiles" class="letter-tiles"></div>
+
+    <button class="btn btn-secondary clear-btn" onclick="Game.clearAll()">
+      ↩ CLEAR
     </button>
   </div>
-</div>
 
-<!-- ════════════════════════════════════════════
-     SCREEN: ANSWERED (spinner — waiting for winner)
-     ════════════════════════════════════════════ -->
-<div id="screen-answered" class="screen" style="justify-content:center">
-  <div class="answered-status">
-    <div class="spinner"></div>
-    <p class="cinematic-big text-center" id="answered-message">
-      🎬 Answer locked! Waiting for result…
-    </p>
-  </div>
-</div>
+  <!-- ── SOLVED (shown after correct answer) ── -->
+  <div id="solved-section" class="solved-section" style="display:none">
+    <div class="solved-check">✅</div>
+    <p class="solved-movie-name" id="solved-movie"></p>
+    <p class="solved-dialogue" id="solved-dialogue"></p>
 
-<!-- ════════════════════════════════════════════
-     SCREEN: BALLOON WINNER (winner sees pop button)
-     ════════════════════════════════════════════ -->
-<div id="screen-balloon-winner" class="screen">
-
-  <div class="winner-badge">
-    <div class="winner-crown">🏆</div>
-    <h2 class="winner-title">YOU GOT IT FIRST!</h2>
-    <p class="winner-name" id="winner-name-display"></p>
-    <p class="winner-time" id="winner-time-display"></p>
-    <p id="winner-dialogue" style="font-style:italic;color:var(--gold);font-size:.95rem;margin-top:8px"></p>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="text-center w-full">
-    <p class="text-gold mt-8 mb-16" style="font-size:1rem">
-      🎈 YOU HAVE EARNED THE RIGHT TO POP THE BALLOON!
-    </p>
-
-    <div class="balloon-container" style="margin:0 auto 24px">
-      <div class="balloon-emoji" id="winner-balloon-emoji">🎈</div>
-      <div class="balloon-string"></div>
+    <div class="solved-letter-reveal">
+      <span class="solved-letter-char" id="solved-letter"></span>
     </div>
 
-    <button class="btn btn-primary btn-huge" id="pop-balloon-btn" onclick="window.App.handlePopBalloon()">
-      🎈 POP THE BALLOON!
+    <div class="progress-bar" style="margin:4px 0 20px">
+      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
+      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
+      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
+      <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
+    </div>
+
+    <button class="btn btn-primary btn-huge" id="next-btn" onclick="Game.nextRiddle()">
+      NEXT RIDDLE →
     </button>
   </div>
+
 </div>
 
-<!-- ════════════════════════════════════════════
-     SCREEN: BALLOON WAITING (others watch)
-     ════════════════════════════════════════════ -->
-<div id="screen-balloon-waiting" class="screen" style="justify-content:center">
-  <div class="text-center w-full">
-    <div class="winner-crown">🏆</div>
-    <h2 class="winner-title mt-8" id="waiting-winner-name"></h2>
-    <p class="text-muted mt-4">got there first in</p>
-    <p class="cinematic-big" id="waiting-winner-time" style="font-size:1.8rem"></p>
-    <p id="waiting-my-time" class="text-muted mt-12" style="display:none"></p>
-
-    <div class="divider" style="margin:20px auto"></div>
-
-    <div class="balloon-container" style="margin:0 auto 16px;opacity:.6">
-      <div class="balloon-emoji">🎈</div>
-      <div class="balloon-string"></div>
-    </div>
-
-    <p class="text-muted" style="font-style:italic">
-      <span class="pulse-dot"></span>The winner is about to pop the balloon…
-    </p>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     SCREEN: BALLOON POPPING (countdown, all players)
-     ════════════════════════════════════════════ -->
-<div id="screen-balloon-popping" class="screen" style="justify-content:center">
-  <div class="text-center">
-    <div class="balloon-container" style="margin:0 auto 24px">
-      <div class="balloon-emoji" id="popping-balloon-emoji">🎈</div>
-      <div class="balloon-string"></div>
-    </div>
-    <div class="countdown-display" id="countdown-display">3</div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════════════
-     SCREEN: REVEAL (movie + letter shown after pop)
-     ════════════════════════════════════════════ -->
-<div id="screen-reveal" class="screen" style="justify-content:center">
-  <div class="reveal-movie">
-    <p class="text-muted mb-8" style="font-size:.82rem;letter-spacing:.15em;text-transform:uppercase">The Movie Was</p>
-    <p class="reveal-movie-title" id="reveal-movie-title"></p>
-    <div class="reveal-letter" id="reveal-letter-big"></div>
-    <p class="text-muted mt-8" id="reveal-dialogue" style="font-style:italic"></p>
-  </div>
-
-  <!-- Progress bar -->
-  <div class="progress-bar" style="margin-top:28px">
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-  </div>
-
-  <p class="text-muted mt-20" style="font-size:.85rem">
-    <span class="pulse-dot"></span>Waiting for next riddle…
-  </p>
-</div>
-
-<!-- ════════════════════════════════════════════
-     SCREEN: RESULTS (riddle leaderboard)
-     ════════════════════════════════════════════ -->
-<div id="screen-results" class="screen">
-
-  <div class="app-header">
-    <h1 class="app-title" id="results-riddle-title">RIDDLE 1 RESULTS</h1>
-    <p class="app-subtitle" id="results-movie"></p>
-  </div>
-
-  <!-- Progress bar -->
-  <div class="progress-bar">
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-    <div class="progress-letter"><span class="letter-char">?</span><div class="letter-glow"></div></div>
-  </div>
-
-  <p class="section-title mt-20 mb-8">SPEED RANKINGS</p>
-  <ul id="results-list" class="leaderboard-list w-full"></ul>
-
-  <p class="text-muted mt-20" style="font-size:.85rem">
-    <span class="pulse-dot"></span>Waiting for next riddle…
-  </p>
-</div>
-
-<!-- ════════════════════════════════════════════
+<!-- ═══════════════════════════════
      SCREEN: FINAL CINEMATIC
-     ════════════════════════════════════════════ -->
+     ═══════════════════════════════ -->
 <div id="screen-final" class="screen" style="justify-content:center">
   <div id="cinematic-scene" class="cinematic-scene"></div>
 </div>
 
-<!-- ════════════════════════════════════════════
-     SCREEN: ENDED
-     ════════════════════════════════════════════ -->
-<div id="screen-ended" class="screen" style="justify-content:center;text-align:center">
-  <p style="font-size:3rem;margin-bottom:16px">🎬</p>
-  <h1 class="join-title">Thank You!</h1>
-  <p class="text-muted mt-12">The name reveal is complete.</p>
-  <p class="final-name mt-20" style="font-size:4rem">ANSH</p>
-  <p class="text-muted mt-8">Our little superstar 👶🏻❤️</p>
-  <button class="btn btn-secondary mt-24" style="max-width:280px" onclick="window.App.handleReplay()">
-    🔄 Watch Again
-  </button>
-</div>
-
-<!-- ════════════════════════════════════════════
-     FIREBASE SDK (compat v10)
-     ════════════════════════════════════════════ -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<!-- App scripts (order matters) -->
-<script src="js/firebase.js"></script>
+<!-- Scripts — no Firebase needed for single-player mode -->
 <script src="js/audio.js"></script>
 <script src="js/animations.js"></script>
 <script src="js/game.js"></script>
-<script src="js/app.js"></script>
 
 </body>
 </html>

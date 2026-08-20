@@ -1,17 +1,17 @@
 // ============================================================
-// GAME ENGINE  —  all Firebase read/write operations,
-//                 winner transactions, leaderboard logic.
-// No DOM manipulation happens here.
+// GAME — Single-player Bollywood word-puzzle
+// No Firebase. No login. Just riddles + letter tiles.
 // ============================================================
 
-window.GameEngine = (() => {
+window.Game = (() => {
 
-    // ── Static riddle data ────────────────────────────────────
-    const RIDDLES = {
-        1: {
-            movie:    "Action Replayy",
-            letter:   "A",
-            dialogue: "Awaaz neeche!",
+    // ── Riddle data ───────────────────────────────────────────
+    const RIDDLES = [
+        {
+            letter:   'A',
+            words:    ['ACTION', 'REPLAYY'],
+            dialogue: 'Awaaz neeche!',
+            audio:    'assets/audio/action-replayy.mp3',
             text:
 `A son is unhappy with his parents' marriage.
 
@@ -19,12 +19,13 @@ So he does something impossible… ⏰
 
 He travels back in time to change their love story! ❤️😂
 
-🎬 Guess the movie!`
+🎬 Which movie is this?`
         },
-        2: {
-            movie:    "Nayak",
-            letter:   "N",
-            dialogue: "Ek din ka CM!",
+        {
+            letter:   'N',
+            words:    ['NAYAK'],
+            dialogue: 'Ek din ka CM!',
+            audio:    'assets/audio/nayak.mp3',
             text:
 `One ordinary man. 👨
 
@@ -32,234 +33,306 @@ One crazy challenge…
 
 Run the entire state for just ONE day! 🏛️
 
-What happens when a common man suddenly gets the power to change everything?
-
-🎬 Guess the movie!`
+🎬 Which movie is this?`
         },
-        3: {
-            movie:    "Singham",
-            letter:   "S",
-            dialogue: "Aata maajhi satakli!",
+        {
+            letter:   'S',
+            words:    ['SINGHAM'],
+            dialogue: 'Aata maajhi satakli!',
+            audio:    'assets/audio/singham.mp3',
             text:
 `One honest police officer. 👮‍♂️
 
 One powerful criminal. 😈
 
-And one man who refuses to bow down to anyone.
-
 When corruption crosses the line…
 
-the lion finally roars! 🦁🔥
+the lion finally ROARS! 🦁🔥
 
-🎬 Guess the movie!`
+🎬 Which movie is this?`
         },
-        4: {
-            movie:    "Heyy Babyy",
-            letter:   "H",
-            dialogue: "Baby ko sambhalo!",
+        {
+            letter:   'H',
+            words:    ['HEYY', 'BABYY'],
+            dialogue: 'Baby ko sambhalo!',
+            audio:    'assets/audio/heyy-babby.mp3',
             text:
 `Three bachelors. 👨‍👨‍👦
 
 One tiny baby. 👶
 
-And absolutely zero experience with babies! 😂
+And absolutely ZERO experience with babies! 😂
 
-Their carefree bachelor life suddenly becomes feeding, crying, diapers and sleepless nights!
-
-🎬 Guess the movie!`
+🎬 Which movie is this?`
         }
-    };
+    ];
 
-    // ── Register / update player ──────────────────────────────
-    async function registerPlayer(uid, name) {
-        const ref = db.ref(`players/${uid}`);
+    // ── State ─────────────────────────────────────────────────
+    let idx      = 0;       // current riddle index (0-3)
+    let placed   = [];      // null | letter string, one slot per answer character
+    let pool     = [];      // [{letter, id}] — tiles still available
+    let uid      = 0;       // unique tile id counter
+    let revealed = 0;       // how many letters revealed so far
+    let busy     = false;   // prevents input during animations
 
-        // Preserve original joinedAt on reconnect
-        const snap = await ref.once("value");
-        const existing = snap.val();
+    // ── Helpers ───────────────────────────────────────────────
+    const $  = id => document.getElementById(id);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        await ref.update({
-            uid,
-            name,
-            joinedAt:  existing?.joinedAt || SERVER_TIMESTAMP,
-            active:    true,
-            lastSeen:  SERVER_TIMESTAMP
-        });
-
-        // Mark inactive on disconnect
-        ref.onDisconnect().update({ active: false, lastSeen: SERVER_TIMESTAMP });
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
     }
 
-    // ── Record "I KNOW IT!" click (server timestamp) ──────────
-    // Returns the stored answer object (with server-assigned clickedAt).
-    async function recordClick(riddleNum, uid, playerName) {
-        const ref = db.ref(`answers/riddle${riddleNum}/${uid}`);
-
-        // Idempotent — don't overwrite an existing click
-        const snap = await ref.once("value");
-        if (snap.val()) return snap.val();
-
-        await ref.set({
-            uid,
-            name:      playerName,
-            clickedAt: SERVER_TIMESTAMP,
-            confirmed: false,
-            riddleNum
-        });
-
-        // Read back to get the server-assigned timestamp
-        const after = await ref.once("value");
-        return after.val();
+    function showScreen(name) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const el = $('screen-' + name);
+        if (el) el.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ── Cancel click (user pressed CANCEL in dialog) ──────────
-    async function cancelClick(riddleNum, uid) {
-        const ref  = db.ref(`answers/riddle${riddleNum}/${uid}`);
-        const snap = await ref.once("value");
-        const data = snap.val();
-        if (data && !data.confirmed) {
-            await ref.remove();
+    // ── Entry ─────────────────────────────────────────────────
+    function start() {
+        idx      = 0;
+        revealed = 0;
+        busy     = false;
+        Animations.updateProgressLetters(0);
+        loadRiddle(0);
+        showScreen('game');
+    }
+
+    // ── Load a riddle ─────────────────────────────────────────
+    function loadRiddle(i) {
+        busy = false;
+        const r = RIDDLES[i];
+
+        // Reset placed slots
+        placed = r.words.flatMap(w => Array(w.length).fill(null));
+
+        // Build tile pool — all answer letters shuffled
+        pool = shuffle(r.words.join('').split('')).map(l => ({ letter: l, id: uid++ }));
+
+        // Update header & text
+        $('riddle-number').textContent = 'RIDDLE ' + (i + 1) + ' OF 4';
+        $('riddle-text').textContent   = r.text;
+
+        // Show puzzle section, hide solved section
+        $('puzzle-section').style.display = '';
+        $('solved-section').style.display = 'none';
+
+        renderWords();
+        renderTiles();
+        AudioManager.play(i + 1);
+    }
+
+    // ── Render ────────────────────────────────────────────────
+    function renderWords() {
+        const r   = RIDDLES[idx];
+        const el  = $('puzzle-words');
+        if (!el) return;
+
+        let pos = 0;
+        el.innerHTML = r.words.map(word => {
+            const boxes = word.split('').map(() => {
+                const p      = pos++;
+                const letter = placed[p];
+                return `<div class="letter-box ${letter ? 'filled' : 'empty'}"
+                              data-pos="${p}"
+                              onclick="Game.onBox(${p})">${letter || ''}</div>`;
+            }).join('');
+            return `<div class="word-group">${boxes}</div>`;
+        }).join('');
+    }
+
+    function renderTiles() {
+        const el = $('letter-tiles');
+        if (!el) return;
+        el.innerHTML = pool.map(t =>
+            `<button class="letter-tile" onclick="Game.onTile(${t.id})">${t.letter}</button>`
+        ).join('');
+    }
+
+    // ── Input handlers ────────────────────────────────────────
+    function onTile(tileId) {
+        if (busy) return;
+
+        const ti = pool.findIndex(t => t.id === tileId);
+        if (ti === -1) return;
+
+        const empty = placed.findIndex(l => l === null);
+        if (empty === -1) return;
+
+        placed[empty] = pool[ti].letter;
+        pool.splice(ti, 1);
+
+        renderWords();
+        renderTiles();
+
+        // Auto-check once all slots filled
+        if (placed.every(l => l !== null)) {
+            busy = true;
+            setTimeout(checkAnswer, 180);
         }
     }
 
-    // ── Confirm answer + atomic winner claim ──────────────────
-    // Returns { isWinner, winnerData, myResponseTime }
-    async function claimWinner(riddleNum, uid, playerName) {
-        // Fetch my stored click data
-        const mySnap = await db.ref(`answers/riddle${riddleNum}/${uid}`).once("value");
-        const myData = mySnap.val();
-        if (!myData?.clickedAt) throw new Error("No click timestamp found.");
+    function onBox(pos) {
+        if (busy) return;
+        if (placed[pos] === null) return;
 
-        // Mark as confirmed
-        await db.ref(`answers/riddle${riddleNum}/${uid}`).update({
-            confirmed:   true,
-            confirmedAt: SERVER_TIMESTAMP
+        pool.push({ letter: placed[pos], id: uid++ });
+        placed[pos] = null;
+
+        renderWords();
+        renderTiles();
+    }
+
+    function clearAll() {
+        if (busy) return;
+        placed.forEach((l, i) => {
+            if (l !== null) pool.push({ letter: l, id: uid++ });
+            placed[i] = null;
         });
+        renderWords();
+        renderTiles();
+    }
 
-        // Get riddle start time
-        const startSnap  = await db.ref(`game/riddleTimestamps/${riddleNum}/startedAt`).once("value");
-        const startedAt  = startSnap.val();
-        if (!startedAt) throw new Error("Riddle start time not found.");
+    // ── Validation ────────────────────────────────────────────
+    function checkAnswer() {
+        const r       = RIDDLES[idx];
+        const attempt = placed.join('');
+        const answer  = r.words.join('');
 
-        const responseTime = (myData.clickedAt - startedAt) / 1000;
+        if (attempt === answer) {
+            onCorrect();
+        } else {
+            onWrong();
+        }
+    }
 
-        // Atomic winner claim via transaction
-        return new Promise((resolve, reject) => {
-            db.ref(`winners/riddle${riddleNum}`).transaction(
-                current => {
-                    if (current === null) {
-                        // First to claim — we win!
-                        return {
-                            uid,
-                            name:         playerName,
-                            clickedAt:    myData.clickedAt,
-                            responseTime,
-                            wonAt:        myData.clickedAt
-                        };
-                    }
-                    return; // undefined → abort (someone already won)
-                },
-                (error, committed, snapshot) => {
-                    if (error) { reject(error); return; }
-                    resolve({
-                        isWinner:       committed,
-                        winnerData:     snapshot.val(),
-                        myResponseTime: responseTime
-                    });
-                }
-            );
+    async function onCorrect() {
+        // Light up boxes
+        document.querySelectorAll('.letter-box').forEach(b => b.classList.add('correct'));
+
+        // Reveal progress letter
+        revealed++;
+        Animations.updateProgressLetters(revealed);
+        Animations.launchConfetti(3500);
+        AudioManager.stop();
+
+        await sleep(600);
+
+        // Show solved panel
+        const r = RIDDLES[idx];
+        $('solved-movie').textContent    = r.words.join(' ');
+        $('solved-dialogue').textContent = '\u201c' + r.dialogue + '\u201d';
+        $('solved-letter').textContent   = r.letter;
+
+        // Also update the progress bar inside the solved section
+        Animations.updateProgressLetters(revealed);
+
+        // Label the next button
+        const nextBtn = $('next-btn');
+        if (nextBtn) {
+            nextBtn.textContent = idx < 3 ? 'NEXT RIDDLE \u2192' : '\ud83c\udfac REVEAL THE NAME!';
+        }
+
+        $('puzzle-section').style.display = 'none';
+        $('solved-section').style.display  = '';
+
+        busy = false;
+    }
+
+    async function onWrong() {
+        // Shake all word groups
+        document.querySelectorAll('.word-group').forEach(g => {
+            g.classList.add('shake');
+            setTimeout(() => g.classList.remove('shake'), 600);
         });
+        await sleep(650);
+        clearAll();
+        busy = false;
     }
 
-    // ── Pop a riddle balloon ──────────────────────────────────
-    async function popBalloon(riddleNum, uid) {
-        const winnerSnap = await db.ref(`winners/riddle${riddleNum}`).once("value");
-        const winner     = winnerSnap.val();
-        if (!winner || winner.uid !== uid) throw new Error("Not authorised to pop this balloon.");
-
-        const ref  = db.ref(`balloons/riddle${riddleNum}`);
-        const snap = await ref.once("value");
-        if (snap.val()) return; // already popped
-
-        await ref.set({ state: "popped", winnerUid: uid, poppedAt: SERVER_TIMESTAMP });
+    // ── Advance ───────────────────────────────────────────────
+    function nextRiddle() {
+        idx++;
+        if (idx >= RIDDLES.length) {
+            runFinalReveal();
+        } else {
+            loadRiddle(idx);
+        }
     }
 
-    // ── Pop the final (champion) balloon ─────────────────────
-    async function popFinalBalloon(uid) {
-        const snap = await db.ref("finalWinner/uid").once("value");
-        if (snap.val() !== uid) throw new Error("Not authorised: not the final champion.");
+    // ── Final cinematic ───────────────────────────────────────
+    async function runFinalReveal() {
+        AudioManager.stop();
+        showScreen('final');
 
-        const ref  = db.ref("balloons/final");
-        const existing = await ref.once("value");
-        if (existing.val()) return;
+        const scene = $('cinematic-scene');
+        if (!scene) return;
 
-        await ref.set({ state: "popped", winnerUid: uid, poppedAt: SERVER_TIMESTAMP });
-    }
-
-    // ── Riddle leaderboard ────────────────────────────────────
-    // Returns [{uid, name, responseTime}] sorted by responseTime asc.
-    async function getRiddleLeaderboard(riddleNum) {
-        const [answersSnap, startSnap] = await Promise.all([
-            db.ref(`answers/riddle${riddleNum}`).once("value"),
-            db.ref(`game/riddleTimestamps/${riddleNum}/startedAt`).once("value")
-        ]);
-
-        const answers   = answersSnap.val() || {};
-        const startedAt = startSnap.val();
-        if (!startedAt) return [];
-
-        return Object.values(answers)
-            .filter(a => a.confirmed && a.clickedAt)
-            .map(a => ({
-                uid:          a.uid,
-                name:         a.name,
-                responseTime: (a.clickedAt - startedAt) / 1000
-            }))
-            .sort((a, b) => a.responseTime - b.responseTime);
-    }
-
-    // ── Overall leaderboard (sum of all riddle response times) ─
-    // Returns [{uid, name, totalTime, count}] sorted asc.
-    async function getOverallLeaderboard() {
-        const [allAnswers, allTimestamps] = await Promise.all([
-            db.ref("answers").once("value"),
-            db.ref("game/riddleTimestamps").once("value")
-        ]);
-
-        const answers    = allAnswers.val()    || {};
-        const timestamps = allTimestamps.val() || {};
-        const totals     = {};
-
-        for (let n = 1; n <= 4; n++) {
-            const key       = `riddle${n}`;
-            const startedAt = timestamps[n]?.startedAt;
-            if (!startedAt) continue;
-
-            const riddleAnswers = answers[key] || {};
-            for (const [, a] of Object.entries(riddleAnswers)) {
-                if (!a.confirmed || !a.clickedAt) continue;
-                const rt = (a.clickedAt - startedAt) / 1000;
-
-                if (!totals[a.uid]) {
-                    totals[a.uid] = { uid: a.uid, name: a.name, totalTime: 0, count: 0 };
-                }
-                totals[a.uid].totalTime += rt;
-                totals[a.uid].count     += 1;
+        const steps = [
+            {
+                delay: 2800,
+                html: `<p class="cinematic-big">\ud83c\udfac</p>
+                       <p class="cinematic-big">Picture abhi baaki hai, mere dost!</p>`
+            },
+            {
+                delay: 3200,
+                html: `<p class="cinematic-medium">Four films\u2026</p>
+                       <p class="cinematic-medium">Four clues\u2026</p>
+                       <p class="cinematic-medium">And one little twist! \ud83c\udf00</p>`
+            },
+            {
+                delay: 2600,
+                html: `<p class="cinematic-big">Look at the FILM NAMES. \ud83d\udc40</p>`
+            },
+            {
+                delay: 4800,
+                html: `
+                    <div class="movie-clue-row"><span class="movie-clue-name">ACTION REPLAYY</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">A</span></div>
+                    <div class="movie-clue-row"><span class="movie-clue-name">NAYAK</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">N</span></div>
+                    <div class="movie-clue-row"><span class="movie-clue-name">SINGHAM</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">S</span></div>
+                    <div class="movie-clue-row"><span class="movie-clue-name">HEYY BABYY</span><span class="movie-clue-arrow">\u2192</span><span class="movie-clue-letter">H</span></div>`
+            },
+            {
+                delay: 3500,
+                html: `<div class="letter-combiner">
+                    <span class="combine-letter">A</span><span class="combine-plus">+</span>
+                    <span class="combine-letter">N</span><span class="combine-plus">+</span>
+                    <span class="combine-letter">S</span><span class="combine-plus">+</span>
+                    <span class="combine-letter">H</span>
+                </div>`
+            },
+            {
+                delay: 7000,
+                confetti: true,
+                html: `
+                    <p class="final-name">ANSH</p>
+                    <p class="superstar-text">OUR LITTLE SUPERSTAR \ud83d\udc76\ud83c\udffb\u2764\ufe0f</p>
+                    <p class="from-parents">Welcome to the world, Ansh!</p>
+                    <p class="from-parents from-parents-gold">From Mom &amp; Dad \u2014 Utkarsha &amp; Rakesh</p>
+                    <button class="btn btn-secondary"
+                            style="max-width:240px;margin-top:28px"
+                            onclick="Game.start()">\ud83d\udd04 Play Again</button>`
             }
-        }
+        ];
 
-        return Object.values(totals).sort((a, b) => a.totalTime - b.totalTime);
+        for (const step of steps) {
+            await Animations.cinematicStep(scene, step.html, 420);
+            if (step.confetti) Animations.launchConfetti(10000);
+            await sleep(step.delay);
+        }
     }
 
-    return {
-        RIDDLES,
-        registerPlayer,
-        recordClick,
-        cancelClick,
-        claimWinner,
-        popBalloon,
-        popFinalBalloon,
-        getRiddleLeaderboard,
-        getOverallLeaderboard
-    };
+    // ── Init ─────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        Animations.initCanvas();
+    });
+
+    return { start, onTile, onBox, clearAll, nextRiddle };
 })();
