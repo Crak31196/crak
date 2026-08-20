@@ -1,0 +1,287 @@
+// ============================================================
+// ADMIN PANEL — Host Dashboard Logic
+// Uses Firebase email/password auth.
+// The signed-in UID must exist in /admins/{uid} in the database.
+// ============================================================
+
+// ── Firebase init (same config as main game) ─────────────────
+// NOTE: firebase-app-compat is already initialised by firebase.js
+// (included in admin/index.html before this file).
+
+const adminDb   = db;       // aliased for clarity
+const adminAuth = auth;
+
+// ── State ─────────────────────────────────────────────────────
+let adminUid   = null;
+let gameStatus = null;
+
+// ── DOM helpers ───────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+
+function log(msg, type = "") {
+    const logEl = $("admin-log");
+    if (!logEl) return;
+    const entry = document.createElement("div");
+    entry.className = `log-entry ${type}`;
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logEl.prepend(entry);
+    // Keep log to 50 lines
+    while (logEl.children.length > 50) logEl.removeChild(logEl.lastChild);
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+async function handleLogin() {
+    const email    = $("admin-email").value.trim();
+    const password = $("admin-password").value;
+    const errEl    = $("login-error");
+    const btn      = $("login-btn");
+
+    errEl.textContent = "";
+
+    if (!email || !password) {
+        errEl.textContent = "Email and password required.";
+        return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = "Signing in…";
+
+    try {
+        const cred = await adminAuth.signInWithEmailAndPassword(email, password);
+        adminUid = cred.user.uid;
+
+        // Verify this UID is in /admins
+        const snap = await adminDb.ref(`admins/${adminUid}`).once("value");
+        if (!snap.val()) {
+            await adminAuth.signOut();
+            errEl.textContent = "This account does not have admin access. Add your UID to /admins in Firebase Console.";
+            btn.disabled    = false;
+            btn.textContent = "Sign In";
+            return;
+        }
+
+        showDashboard();
+    } catch (err) {
+        errEl.textContent = err.message || "Login failed.";
+        btn.disabled    = false;
+        btn.textContent = "Sign In";
+    }
+}
+
+function handleSignOut() {
+    adminAuth.signOut().then(() => {
+        $("login-panel").style.display    = "";
+        $("dashboard").style.display      = "none";
+        $("admin-password").value         = "";
+        adminUid = null;
+    });
+}
+
+// ── Dashboard init ────────────────────────────────────────────
+function showDashboard() {
+    $("login-panel").style.display  = "none";
+    $("dashboard").style.display    = "";
+    set("signed-in-uid", `UID: ${adminUid}`);
+
+    log(`Signed in as ${adminUid}`, "ok");
+
+    listenToStatus();
+    listenToPlayers();
+}
+
+// ── Listeners ─────────────────────────────────────────────────
+function listenToStatus() {
+    adminDb.ref("game/status").on("value", snap => {
+        gameStatus = snap.val() || {};
+        renderStatus(gameStatus);
+    });
+}
+
+function listenToPlayers() {
+    adminDb.ref("players").on("value", snap => {
+        renderPlayers(snap.val() || {});
+    });
+}
+
+// ── Render status ─────────────────────────────────────────────
+function renderStatus(s) {
+    const state    = s.state    || "waiting";
+    const riddle   = s.currentRiddle || "—";
+
+    set("status-state",   state.toUpperCase());
+    set("status-riddle",  riddle);
+
+    // Style badge
+    const badge = $("status-badge");
+    if (badge) {
+        badge.className = `status-badge ${state}`;
+        badge.textContent = state.toUpperCase();
+    }
+
+    // Load winner for current riddle
+    if (s.currentRiddle) {
+        adminDb.ref(`winners/riddle${s.currentRiddle}`).once("value").then(snap => {
+            const w = snap.val();
+            const winnerEl = $("status-winner");
+            if (winnerEl) {
+                winnerEl.innerHTML = w
+                    ? `<div class="winner-display"><span>🏆</span><span class="w-name">${esc(w.name)}</span><span class="w-time">${typeof w.responseTime === "number" ? w.responseTime.toFixed(1)+"s" : ""}</span></div>`
+                    : `<span style="color:var(--muted);font-size:.85rem">No winner yet</span>`;
+            }
+        });
+    }
+
+    updateButtonStates(state, riddle);
+}
+
+function updateButtonStates(state, riddle) {
+    const isWaiting  = state === "waiting";
+    const isPlaying  = state === "playing";
+    const isResults  = state === "results";
+    const isFinal    = state === "final";
+    const isEnded    = state === "ended";
+
+    setBtn("btn-start-game",    isWaiting);
+    setBtn("btn-riddle-1",      isWaiting || isResults || isEnded);
+    setBtn("btn-riddle-2",      isResults && riddle >= 1);
+    setBtn("btn-riddle-3",      isResults && riddle >= 2);
+    setBtn("btn-riddle-4",      isResults && riddle >= 3);
+    setBtn("btn-show-results",  isPlaying);
+    setBtn("btn-final-reveal",  isResults && riddle === 4 || isPlaying && riddle === 4);
+    setBtn("btn-end-game",      !isWaiting && !isEnded);
+    setBtn("btn-reset-riddle",  isPlaying || isResults);
+    setBtn("btn-reset-game",    true);
+}
+
+function setBtn(id, enabled) {
+    const el = $(id);
+    if (el) el.disabled = !enabled;
+}
+
+// ── Render players ────────────────────────────────────────────
+function renderPlayers(players) {
+    const tbody = $("players-tbody");
+    if (!tbody) return;
+
+    const list = Object.values(players)
+        .filter(p => p.name)
+        .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+
+    set("player-count-badge", list.length);
+
+    if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No players yet</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map(p => `
+        <tr>
+            <td>${esc(p.name)}</td>
+            <td><span class="${p.active ? "badge-active" : "badge-inactive"}">${p.active ? "● Active" : "○ Away"}</span></td>
+            <td style="color:var(--muted);font-size:.8rem">${p.uid ? p.uid.substring(0,8)+"…" : "—"}</td>
+            <td style="color:var(--muted);font-size:.75rem">${p.lastSeen ? new Date(p.lastSeen).toLocaleTimeString() : "—"}</td>
+        </tr>
+    `).join("");
+}
+
+// ── Admin actions ─────────────────────────────────────────────
+async function adminAction(action, extra = {}) {
+    try {
+        log(`Running: ${action}…`);
+        await _doAction(action, extra);
+        log(`Done: ${action}`, "ok");
+    } catch (err) {
+        log(`Error: ${action} — ${err.message}`, "err");
+        console.error(err);
+    }
+}
+
+async function _doAction(action, extra) {
+    const statusRef = adminDb.ref("game/status");
+
+    switch (action) {
+        case "startGame":
+            await statusRef.update({ state: "waiting", currentRiddle: 0, startedAt: SERVER_TIMESTAMP });
+            break;
+
+        case "startRiddle": {
+            const n = extra.n;
+            await statusRef.update({ state: "playing", currentRiddle: n });
+            // Set riddle start timestamp (authoritative)
+            await adminDb.ref(`game/riddleTimestamps/${n}`).set({ startedAt: SERVER_TIMESTAMP });
+            break;
+        }
+
+        case "showResults": {
+            const n = gameStatus?.currentRiddle;
+            if (!n) throw new Error("No active riddle");
+            await statusRef.update({ state: "results", currentRiddle: n });
+            break;
+        }
+
+        case "finalReveal":
+            await statusRef.update({ state: "final" });
+            break;
+
+        case "endGame":
+            await statusRef.update({ state: "ended" });
+            break;
+
+        case "resetRiddle": {
+            const n = gameStatus?.currentRiddle;
+            if (!n) throw new Error("No active riddle");
+            // Remove winner and answers for current riddle
+            await Promise.all([
+                adminDb.ref(`winners/riddle${n}`).remove(),
+                adminDb.ref(`answers/riddle${n}`).remove(),
+                adminDb.ref(`balloons/riddle${n}`).remove(),
+                adminDb.ref(`game/riddleTimestamps/${n}`).remove()
+            ]);
+            await statusRef.update({ state: "playing", currentRiddle: n });
+            await adminDb.ref(`game/riddleTimestamps/${n}`).set({ startedAt: SERVER_TIMESTAMP });
+            break;
+        }
+
+        case "resetGame":
+            if (!confirm("⚠️ This will wipe ALL game data. Are you sure?")) return;
+            await Promise.all([
+                adminDb.ref("game").remove(),
+                adminDb.ref("answers").remove(),
+                adminDb.ref("winners").remove(),
+                adminDb.ref("balloons").remove(),
+                adminDb.ref("finalWinner").remove()
+            ]);
+            await statusRef.set({ state: "waiting", currentRiddle: 0 });
+            break;
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function esc(str) {
+    return String(str ?? "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── Auth state observer ───────────────────────────────────────
+adminAuth.onAuthStateChanged(user => {
+    if (user) {
+        adminUid = user.uid;
+        adminDb.ref(`admins/${adminUid}`).once("value").then(snap => {
+            if (snap.val()) {
+                showDashboard();
+            } else {
+                adminAuth.signOut();
+            }
+        });
+    } else {
+        $("login-panel").style.display = "";
+        $("dashboard").style.display   = "none";
+    }
+});
+
+// ── Enter key on password field ───────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+    const pw = $("admin-password");
+    if (pw) pw.addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
+});
