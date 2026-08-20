@@ -51,8 +51,8 @@ const RIDDLES = [
 const CLIMAX_BEATS = [
   /* 0 — dramatic opening line */
   {
-    tapToAdvance: true,
-    autoMs: null,
+    tapToAdvance: false,
+    autoMs: 4000,
     html: () => `
       <div class="beat beat--center">
         <p class="beat-quote">"Picture abhi baaki hai mere dost!"</p>
@@ -61,8 +61,8 @@ const CLIMAX_BEATS = [
   },
   /* 1 — four films, four clues */
   {
-    tapToAdvance: true,
-    autoMs: null,
+    tapToAdvance: false,
+    autoMs: 5000,
     html: () => `
       <div class="beat beat--stagger">
         <p class="beat-line" style="--delay:0.0s">Four films…</p>
@@ -72,8 +72,8 @@ const CLIMAX_BEATS = [
   },
   /* 2 — don't look */
   {
-    tapToAdvance: true,
-    autoMs: null,
+    tapToAdvance: false,
+    autoMs: 5000,
     html: () => `
       <div class="beat beat--stagger">
         <p class="beat-line beat-line--small" style="--delay:0.0s">Don't look at the heroes.</p>
@@ -83,8 +83,8 @@ const CLIMAX_BEATS = [
   },
   /* 3 — look at film names */
   {
-    tapToAdvance: true,
-    autoMs: null,
+    tapToAdvance: false,
+    autoMs: 4500,
     html: () => `
       <div class="beat beat--center">
         <p class="beat-line beat-line--accent" style="--delay:0.0s; font-size:clamp(1.4rem,6vw,2.2rem)">
@@ -167,6 +167,9 @@ const CLIMAX_BEATS = [
 const state = {
   currentRiddle:   0,
   guestName:       '',
+  audioAvailable:  [null, null, null, null],
+  audioIsPlaying:  false,
+  hintTimer:       null,
   climaxBeat:      -1,
   climaxAutoTimer: null,
 };
@@ -193,8 +196,15 @@ function cacheDom() {
     filmNum:     document.getElementById('film-num'),
 
     // riddle
-    riddleText: document.getElementById('riddle-text'),
-    btnReveal:  document.getElementById('btn-reveal'),
+    riddleText:  document.getElementById('riddle-text'),
+    btnReveal:   document.getElementById('btn-reveal'),
+    riddleHint:  document.getElementById('riddle-hint'),
+    hintQuote:   document.getElementById('hint-quote'),
+    btnAudio:    document.getElementById('btn-audio'),
+    audioIcon:   document.getElementById('audio-icon'),
+    audioLbl:    document.getElementById('audio-lbl'),
+    audioSoon:   document.getElementById('audio-soon'),
+    audioEl:     document.getElementById('audio-el'),
 
     // climax
     climaxStage: document.getElementById('climax-stage'),
@@ -370,11 +380,109 @@ function launchConfetti() {
 }
 
 /* ─────────────────────────────────────────────
+   AUDIO + HINT
+───────────────────────────────────────────── */
+function stopAudio() {
+  if (!dom.audioEl) return;
+  if (!dom.audioEl.paused) {
+    dom.audioEl.pause();
+    dom.audioEl.currentTime = 0;
+  }
+  state.audioIsPlaying = false;
+  resetAudioButton();
+}
+
+function resetAudioButton() {
+  if (!dom.btnAudio) return;
+  dom.btnAudio.classList.remove('is-playing');
+  if (dom.audioIcon) dom.audioIcon.textContent = '▶';
+  if (dom.audioLbl)  dom.audioLbl.textContent  = 'PLAY DIALOGUE';
+}
+
+function setupAudioForHint(riddleIdx) {
+  if (!dom.btnAudio || !dom.audioSoon) return;
+  resetAudioButton();
+  dom.btnAudio.disabled = false;
+  dom.btnAudio.hidden   = false;
+  dom.audioSoon.hidden  = true;
+
+  if (state.audioAvailable[riddleIdx] === false) {
+    dom.btnAudio.hidden  = true;
+    dom.audioSoon.hidden = false;
+    return;
+  }
+  if (state.audioAvailable[riddleIdx] === true) return;
+
+  const probe = new Audio();
+  probe.preload = 'metadata';
+  probe.addEventListener('error', () => {
+    state.audioAvailable[riddleIdx] = false;
+    if (state.currentRiddle === riddleIdx && dom.btnAudio) {
+      dom.btnAudio.hidden  = true;
+      dom.audioSoon.hidden = false;
+    }
+  }, { once: true });
+  probe.addEventListener('loadedmetadata', () => {
+    state.audioAvailable[riddleIdx] = true;
+  }, { once: true });
+  probe.src = RIDDLES[riddleIdx].audio;
+}
+
+function toggleAudio(riddleIdx) {
+  if (!dom.audioEl || state.audioAvailable[riddleIdx] === false) return;
+
+  if (state.audioIsPlaying) {
+    dom.audioEl.pause();
+    state.audioIsPlaying      = false;
+    dom.audioIcon.textContent = '▶';
+    dom.audioLbl.textContent  = 'PLAY DIALOGUE';
+    dom.btnAudio.classList.remove('is-playing');
+    return;
+  }
+
+  const riddle = RIDDLES[riddleIdx];
+  if (dom.audioEl.src !== new URL(riddle.audio, document.baseURI).href) {
+    dom.audioEl.src = riddle.audio;
+  }
+
+  dom.audioEl.play().then(() => {
+    state.audioIsPlaying      = true;
+    dom.audioIcon.textContent = '⏸';
+    dom.audioLbl.textContent  = 'PAUSE';
+    dom.btnAudio.classList.add('is-playing');
+  }).catch(() => {
+    state.audioAvailable[riddleIdx] = false;
+    dom.btnAudio.hidden  = true;
+    dom.audioSoon.hidden = false;
+  });
+
+  dom.audioEl.onended = () => {
+    state.audioIsPlaying      = false;
+    dom.audioIcon.textContent = '▶';
+    dom.audioLbl.textContent  = 'PLAY AGAIN';
+    dom.btnAudio.classList.remove('is-playing');
+  };
+}
+
+function showRiddleHint(idx) {
+  if (!dom.riddleHint || state.currentRiddle !== idx) return;
+  if (dom.hintQuote) dom.hintQuote.textContent = RIDDLES[idx].dialogue;
+  dom.riddleHint.hidden = false;
+  dom.riddleHint.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setupAudioForHint(idx);
+}
+
+/* ─────────────────────────────────────────────
    RIDDLE SYSTEM
 ───────────────────────────────────────────── */
 function loadRiddle(idx) {
   const riddle = RIDDLES[idx];
   state.currentRiddle = idx;
+
+  // Clear previous hint timer and reset hint/audio
+  if (state.hintTimer) { clearTimeout(state.hintTimer); state.hintTimer = null; }
+  if (dom.riddleHint) dom.riddleHint.hidden = true;
+  stopAudio();
 
   dom.filmNum.textContent    = idx + 1;
   dom.riddleText.textContent = riddle.text;
@@ -386,9 +494,14 @@ function loadRiddle(idx) {
     void card.offsetHeight;
     card.style.animation = '';
   }
+
+  // Show dialogue hint after 60s if the user hasn't moved on
+  state.hintTimer = setTimeout(() => showRiddleHint(idx), 60000);
 }
 
 function goToNextRiddle() {
+  stopAudio();
+  if (state.hintTimer) { clearTimeout(state.hintTimer); state.hintTimer = null; }
   if (state.currentRiddle < RIDDLES.length - 1) {
     loadRiddle(state.currentRiddle + 1);
     dom.screenRiddle.scrollTo({ top: 0, behavior: 'smooth' });
@@ -440,14 +553,9 @@ function advanceClimaxBeat() {
     stage.style.opacity    = '1';
     stage.style.transform  = 'translateY(0)';
 
-    // Show / hide tap hint
-    if (beat.tapToAdvance) {
-      tapHint.classList.add('is-visible');
-      tapHint.setAttribute('aria-hidden', 'false');
-    } else {
-      tapHint.classList.remove('is-visible');
-      tapHint.setAttribute('aria-hidden', 'true');
-    }
+    // Tap hint hidden — all beats auto-advance now
+    tapHint.classList.remove('is-visible');
+    tapHint.setAttribute('aria-hidden', 'true');
 
     // Auto-advance
     if (beat.autoMs) {
@@ -478,14 +586,18 @@ function startCelebration() {
    RESET (replay)
 ───────────────────────────────────────────── */
 function resetEverything() {
+  stopAudio();
+  if (state.hintTimer) { clearTimeout(state.hintTimer); state.hintTimer = null; }
   if (state.climaxAutoTimer) {
     clearTimeout(state.climaxAutoTimer);
     state.climaxAutoTimer = null;
   }
 
-  state.currentRiddle = 0;
-  state.guestName     = '';
-  state.climaxBeat    = -1;
+  state.currentRiddle  = 0;
+  state.guestName      = '';
+  state.climaxBeat     = -1;
+  state.audioAvailable = [null, null, null, null];
+  state.audioIsPlaying = false;
 
   loadRiddle(0);
   dom.climaxStage.innerHTML = '';
@@ -514,7 +626,10 @@ function bindEvents() {
 
   // “I KNOW THE MOVIE” → go directly to next riddle (no answer reveal)
   dom.btnReveal.addEventListener('click', goToNextRiddle);
-
+  // Audio play/pause in hint section
+  if (dom.btnAudio) {
+    dom.btnAudio.addEventListener('click', () => toggleAudio(state.currentRiddle));
+  }
   // Climax tap-to-advance (hint button)
   dom.tapHint.addEventListener('click', () => {
     const beat = CLIMAX_BEATS[state.climaxBeat];

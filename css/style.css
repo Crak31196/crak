@@ -362,6 +362,54 @@ body {
   transform: translateY(-2px);
 }
 
+/* ─────────────────────────────────────────────
+   RIDDLE HINT (auto-shown after 60s)
+───────────────────────────────────────────── */
+.riddle-hint {
+  width: 100%;
+  margin-top: var(--sp-lg);
+  padding-top: var(--sp-lg);
+  text-align: center;
+  animation: fade-in-up 0.7s ease both;
+}
+
+.hint-divider {
+  width: 40%;
+  margin: 0 auto var(--sp-lg);
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #b0cce0 0, #b0cce0 6px,
+    transparent 6px, transparent 12px
+  );
+}
+
+.hint-label {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  color: #5a80a0;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-sm);
+}
+
+.hint-quote {
+  font-family: var(--font-body);
+  font-size: clamp(1.05rem, 3.5vw, 1.2rem);
+  font-style: italic;
+  color: #0a1828;
+  margin-bottom: var(--sp-md);
+  border: none;
+  padding: 0;
+}
+
+.hint-audio-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
 /* I KNOW button — dark navy on light blue bg, gold text */
 .btn--reveal {
   background: linear-gradient(135deg, #0a1828, #162438);

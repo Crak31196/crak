@@ -130,6 +130,27 @@
         <div class="riddle-card" id="riddle-card">
           <p class="riddle-card__label" aria-hidden="true">🎬 &nbsp;BOLLYWOOD MYSTERY</p>
           <p class="riddle-text" id="riddle-text"></p>
+
+          <!-- Appears after 60s as a dialogue hint for stuck guests -->
+          <div class="riddle-hint" id="riddle-hint" hidden>
+            <div class="hint-divider" aria-hidden="true"></div>
+            <p class="hint-label">💡 HINT — FILMY DIALOGUE</p>
+            <blockquote class="hint-quote" id="hint-quote"></blockquote>
+            <div class="hint-audio-row">
+              <button
+                class="btn btn--audio"
+                id="btn-audio"
+                aria-label="Play the film dialogue audio clip"
+              >
+                <span id="audio-icon" aria-hidden="true">▶</span>
+                <span id="audio-lbl">PLAY DIALOGUE</span>
+              </button>
+              <p class="audio-soon" id="audio-soon" hidden>
+                <span aria-hidden="true">🎵</span> Audio coming soon
+              </p>
+            </div>
+          </div>
+
           <button
             id="btn-reveal"
             class="btn btn--reveal"
@@ -203,6 +224,8 @@
       </button>
     </div>
   </section>
+
+  <audio id="audio-el" preload="none" aria-hidden="true" tabindex="-1"></audio>
 
   <script src="js/script.js"></script>
 </body>
