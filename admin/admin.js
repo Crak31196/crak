@@ -4,16 +4,21 @@
 // The signed-in UID must exist in /admins/{uid} in the database.
 // ============================================================
 
-// ── Firebase init (same config as main game) ─────────────────
-// NOTE: firebase-app-compat is already initialised by firebase.js
-// (included in admin/index.html before this file).
+// ── Firebase init — SEPARATE named app so admin auth is isolated ─
+// Guest pages sign in anonymously; without isolation that auth-state
+// change fires onAuthStateChanged here and signs the admin out.
+const _adminApp = (() => {
+    try { return firebase.app("admin-panel"); }
+    catch(e) { return firebase.initializeApp(firebaseConfig, "admin-panel"); }
+})();
 
-const adminDb   = db;       // aliased for clarity
-const adminAuth = auth;
+const adminDb   = _adminApp.database();
+const adminAuth = _adminApp.auth();
 
 // ── State ─────────────────────────────────────────────────────
-let adminUid   = null;
-let gameStatus = null;
+let adminUid       = null;
+let gameStatus     = null;
+let dashboardReady = false;   // prevents duplicate listener setup
 
 // ── DOM helpers ───────────────────────────────────────────────
 const $  = id => document.getElementById(id);
@@ -70,11 +75,12 @@ async function handleLogin() {
 }
 
 function handleSignOut() {
+    dashboardReady = false;
+    adminUid = null;
     adminAuth.signOut().then(() => {
-        $("login-panel").style.display    = "";
-        $("dashboard").style.display      = "none";
-        $("admin-password").value         = "";
-        adminUid = null;
+        $("login-panel").style.display = "";
+        $("dashboard").style.display   = "none";
+        $("admin-password").value      = "";
     });
 }
 
@@ -92,6 +98,8 @@ function showDashboard() {
 
 // ── Listeners ─────────────────────────────────────────────────
 function listenToStatus() {
+    if (listenToStatus._on) return;
+    listenToStatus._on = true;
     adminDb.ref("game/status").on("value", snap => {
         gameStatus = snap.val() || {};
         renderStatus(gameStatus);
@@ -99,6 +107,8 @@ function listenToStatus() {
 }
 
 function listenToPlayers() {
+    if (listenToPlayers._on) return;
+    listenToPlayers._on = true;
     adminDb.ref("players").on("value", snap => {
         renderPlayers(snap.val() || {});
     });
@@ -266,15 +276,24 @@ function esc(str) {
 // ── Auth state observer ───────────────────────────────────────
 adminAuth.onAuthStateChanged(user => {
     if (user) {
+        // Already on dashboard — token refreshed, nothing to do
+        if (dashboardReady) return;
+
         adminUid = user.uid;
-        adminDb.ref(`admins/${adminUid}`).once("value").then(snap => {
-            if (snap.val()) {
-                showDashboard();
-            } else {
-                adminAuth.signOut();
-            }
-        });
+        adminDb.ref(`admins/${adminUid}`).once("value")
+            .then(snap => {
+                if (snap.val()) {
+                    dashboardReady = true;
+                    showDashboard();
+                }
+                // Not an admin — just stay on login, don't auto-signout
+            })
+            .catch(() => { /* permission denied — not an admin, ignore */ });
     } else {
+        // Explicit sign-out — reset all flags so listeners restart on next login
+        dashboardReady         = false;
+        listenToStatus._on     = false;
+        listenToPlayers._on    = false;
         $("login-panel").style.display = "";
         $("dashboard").style.display   = "none";
     }
