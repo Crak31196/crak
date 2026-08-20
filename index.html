@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Four Bollywood films. Four clues. One special name. ❤️" />
+  <meta name="theme-color" content="#080608" />
+  <title>🎬 A Special Name Reveal | Ansh</title>
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="🎬 A Special Name Reveal | Ansh" />
+  <meta property="og:description" content="Four Bollywood films. Four clues. One special name. ❤️" />
+  <meta property="og:image" content="assets/images/og-preview.png" />
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="🎬 A Special Name Reveal | Ansh" />
+  <meta name="twitter:description" content="Four Bollywood films. Four clues. One special name. ❤️" />
+
+  <!-- Google Fonts: Cinzel (cinematic headings) + Crimson Text (elegant body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Floating particle background (canvas) -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <!-- Film grain cinematic texture overlay -->
+  <div class="film-grain" aria-hidden="true"></div>
+
+  <!-- ================================================================
+       SCREEN 1 — LANDING
+  ================================================================ -->
+  <section
+    id="screen-landing"
+    class="screen screen--active"
+    aria-label="Welcome to the Bollywood name reveal"
+  >
+    <div class="spotlight spotlight--1" aria-hidden="true"></div>
+    <div class="landing__inner">
+      <p class="landing__ornament" aria-hidden="true">✦ &nbsp; ✦ &nbsp; ✦</p>
+
+      <h1 class="landing__tagline">
+        <span class="tagline__word">Lights.</span>
+        <span class="tagline__word">Camera.</span>
+        <span class="tagline__word tagline__word--gold">Mystery.</span>
+      </h1>
+
+      <p class="landing__subtitle">A Special Bollywood Name Reveal</p>
+      <p class="landing__dedication">
+        For our little superstar&nbsp;<span role="img" aria-label="baby">👶🏻</span>
+      </p>
+
+      <button
+        id="btn-start"
+        class="btn btn--cta"
+        aria-label="Start the Bollywood name reveal experience"
+      >
+        <span class="btn__text">START THE REVEAL</span>
+        <span class="btn__icon" aria-hidden="true">🎬</span>
+      </button>
+    </div>
+
+    <p class="landing__footer" aria-hidden="true">✦ &nbsp;Utkarsha &amp; Rakesh&nbsp; ✦</p>
+  </section>
+
+  <!-- ================================================================
+       SCREEN 2 — RIDDLE
+  ================================================================ -->
+  <section
+    id="screen-riddle"
+    class="screen"
+    aria-label="Bollywood movie riddle"
+  >
+    <!-- Sticky progress header -->
+    <header class="riddle-hdr">
+      <p
+        class="film-counter"
+        id="film-counter"
+        aria-live="polite"
+        aria-atomic="true"
+      >FILM <span id="film-num">1</span>&nbsp;OF&nbsp;4</p>
+
+      <div
+        class="name-slots"
+        role="status"
+        aria-label="Name letters revealed so far"
+        aria-live="polite"
+      >
+        <div class="name-slot" id="ns-0" aria-label="First letter, not yet revealed">
+          <span class="name-slot__inner">?</span>
+        </div>
+        <div class="name-slot" id="ns-1" aria-label="Second letter, not yet revealed">
+          <span class="name-slot__inner">?</span>
+        </div>
+        <div class="name-slot" id="ns-2" aria-label="Third letter, not yet revealed">
+          <span class="name-slot__inner">?</span>
+        </div>
+        <div class="name-slot" id="ns-3" aria-label="Fourth letter, not yet revealed">
+          <span class="name-slot__inner">?</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="riddle-main">
+
+      <!-- QUESTION PHASE -->
+      <div id="phase-question" class="riddle-phase">
+        <div class="riddle-card" id="riddle-card">
+          <p class="riddle-card__label" aria-hidden="true">🎬 &nbsp;BOLLYWOOD MYSTERY</p>
+          <p class="riddle-text" id="riddle-text"></p>
+          <button
+            id="btn-reveal"
+            class="btn btn--reveal"
+            aria-label="Reveal the Bollywood movie answer"
+          >
+            <span class="btn__text">REVEAL MOVIE</span>
+            <span class="btn__icon" aria-hidden="true">🎬</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ANSWER PHASE (hidden until Reveal is clicked) -->
+      <div id="phase-answer" class="riddle-phase riddle-phase--answer" hidden>
+
+        <div class="answer-letter-wrap" aria-hidden="true">
+          <div class="answer-letter" id="answer-letter"></div>
+          <div class="answer-letter-glow" aria-hidden="true"></div>
+        </div>
+
+        <h2 class="answer-title" id="answer-title"></h2>
+
+        <div class="dialogue-box">
+          <p class="dialogue-lbl">
+            <span aria-hidden="true">🎙️</span>&nbsp;FILMY DIALOGUE
+          </p>
+          <blockquote class="dialogue-quote" id="dialogue-quote"></blockquote>
+
+          <div class="audio-row">
+            <button
+              class="btn btn--audio"
+              id="btn-audio"
+              aria-label="Play the famous film dialogue audio clip"
+            >
+              <span class="audio-icon" id="audio-icon" aria-hidden="true">▶</span>
+              <span id="audio-lbl">PLAY DIALOGUE</span>
+            </button>
+            <p class="audio-soon" id="audio-soon" hidden>
+              <span aria-hidden="true">🎵</span>&nbsp;Audio coming soon
+            </p>
+          </div>
+        </div>
+
+        <button
+          id="btn-next"
+          class="btn btn--next"
+          aria-label="Go to next riddle"
+        >
+          <span id="next-lbl">NEXT RIDDLE</span>
+          <span class="btn__icon" id="next-icon" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+    </main>
+  </section>
+
+  <!-- ================================================================
+       SCREEN 3 — CLIMAX (dramatic reveal sequence)
+  ================================================================ -->
+  <section
+    id="screen-climax"
+    class="screen screen--dark"
+    aria-label="The dramatic name reveal climax"
+  >
+    <div class="spotlight spotlight--climax" aria-hidden="true"></div>
+
+    <div
+      class="climax-stage"
+      id="climax-stage"
+      aria-live="assertive"
+      aria-atomic="true"
+    >
+      <!-- Beats injected by JS -->
+    </div>
+
+    <button
+      class="tap-hint"
+      id="tap-hint"
+      aria-label="Tap to continue to the next part"
+    >Tap anywhere to continue &rsaquo;</button>
+  </section>
+
+  <!-- ================================================================
+       SCREEN 4 — CELEBRATION
+  ================================================================ -->
+  <section
+    id="screen-celebration"
+    class="screen screen--celebration"
+    aria-label="Baby name celebration"
+  >
+    <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+    <div class="cel-content">
+      <p class="cel-welcome">Welcome to the world,</p>
+
+      <div class="cel-name-block">
+        <h1 class="cel-name">ANSH</h1>
+        <div class="cel-glow" aria-hidden="true"></div>
+      </div>
+
+      <p class="cel-heart" role="img" aria-label="Love heart">❤️</p>
+      <p class="cel-from">From Mom &amp; Dad</p>
+      <p class="cel-parents">Utkarsha &amp; Rakesh</p>
+
+      <button
+        id="btn-replay"
+        class="btn btn--replay"
+        aria-label="Replay the entire name reveal from the very beginning"
+      >
+        <span class="btn__text">REPLAY THE REVEAL</span>
+        <span class="btn__icon" aria-hidden="true">🔄</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Shared hidden audio element, controlled entirely by JS -->
+  <audio id="audio-el" preload="none" aria-hidden="true" tabindex="-1"></audio>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
